@@ -4,7 +4,7 @@
 ![Python](https://img.shields.io/badge/Python-3.9-blue)  
 ![Pandas](https://img.shields.io/badge/Pandas-Data%20Analysis-yellowgreen)  
 ![Matplotlib](https://img.shields.io/badge/Matplotlib-Visualization-orange)  
-![Seaborn](https://img.shields.io/badge/Seaborn-Charts-blueviolet)  
+![Seaborn](https://img.shields.io/badge/Seaborn-Charts-blueviolet) 
 ![ReportLab](https://img.shields.io/badge/ReportLab-PDF%20Reports-lightgrey)  
 ![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange)  
 
