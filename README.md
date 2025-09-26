@@ -81,7 +81,7 @@ This project analyzes **crime data from the Los Angeles Police Department (LAPD)
 
 | Crimes by Hour | Top 5 Areas with Night Crimes | Victim Age Groups |
 |----------------|-------------------------------|------------------|
-|(./<img width="1023" height="545" alt="image" src="https://github.com/user-attachments/assets/94e1bb92-034e-4bd9-974e-4fdf3e74404e" />) |(./<img width="704" height="520" alt="image" src="https://github.com/user-attachments/assets/c4855c75-d355-473e-a01a-abddda45988e" />) |(./<img width="713" height="493" alt="image" src="https://github.com/user-attachments/assets/7efd1071-3c6e-42f5-864b-ce05dc6b3a7f" />) |
+|/<img width="1023" height="545" alt="image" src="https://github.com/user-attachments/assets/94e1bb92-034e-4bd9-974e-4fdf3e74404e" />|/<img width="704" height="520" alt="image" src="https://github.com/user-attachments/assets/c4855c75-d355-473e-a01a-abddda45988e" />|/<img width="713" height="493" alt="image" src="https://github.com/user-attachments/assets/7efd1071-3c6e-42f5-864b-ce05dc6b3a7f" />|
 
 ---
 
