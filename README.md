@@ -24,8 +24,8 @@ This project analyzes **crime data from the Los Angeles Police Department (LAPD)
 
 ## 📂 Dataset  
 
-- **Source:** Modified version of [Los Angeles Open Data – Crime Data](https://data.lacity.org/)  
-- **File:** "C:\Users\NEW USER\Downloads\Analyzing Crime in Los Angeles\crimes.csv"  
+- **Source:** Modified version of [Los Angeles Open Data – Crime Data](https://www.datacamp.com/datalab/w/fb1992cd-cf01-4cea-a0ad-cd477d93f0c3/edit)  
+- **File:** `crimes.csv`  
 - **Size:** ~ 100,000 × 12 (rows × columns)  
 - **Key Columns:**  
   - `DATE OCC` → Date of occurrence  
