@@ -90,5 +90,5 @@ This project analyzes **crime data from the Los Angeles Police Department (LAPD)
 1. Clone the repository:  
 
    ```bash
-   git clone https://github.com/YourUsername/lapd-crime-analysis.git
+   git clone https://github.com/UCJPENIEL/Analyzing-Crime-in-Los-Angeles.git
    cd lapd-crime-analysis
