@@ -1,0 +1,133 @@
+name: Validate and publish crime analysis
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crimes.csv"
+      - "*.ipynb"
+      - "requirements.txt"
+      - ".github/workflows/execute-analysis.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  execute-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Execute notebook from a clean state
+        run: |
+          jupyter nbconvert --to notebook --execute --inplace \
+            --ExecutePreprocessor.timeout=600 \
+            Los_Angeles_Crimes_Analysis_RECOVERED.ipynb
+      - name: Verify notebook execution and chart exports
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          nb = json.loads(Path("Los_Angeles_Crimes_Analysis_RECOVERED.ipynb").read_text(encoding="utf-8"))
+          code_cells = [c for c in nb["cells"] if c.get("cell_type") == "code"]
+          assert code_cells, "No code cells found."
+          assert all(c.get("execution_count") is not None for c in code_cells), "A code cell did not execute."
+          assert any(c.get("outputs") for c in code_cells), "Notebook contains no saved outputs."
+          expected = [
+              Path("images/01_crimes_by_hour.png"),
+              Path("images/02_night_crimes_by_area.png"),
+              Path("images/03_crimes_by_victim_age_group.png"),
+          ]
+          missing = [str(p) for p in expected if not p.exists() or p.stat().st_size == 0]
+          assert not missing, f"Missing or empty chart files: {missing}"
+          print(f"Verified {len(code_cells)} executed code cells and {len(expected)} chart exports.")
+          PY
+      - name: Regenerate PDF report
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+          from reportlab.lib import colors
+          from reportlab.lib.enums import TA_CENTER
+          from reportlab.lib.pagesizes import A4
+          from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+          from reportlab.lib.units import mm
+          from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak
+
+          data = pd.read_csv("crimes.csv", low_memory=False)
+          t = pd.to_numeric(data["TIME OCC"], errors="coerce")
+          text = t.fillna(-1).astype("int64").astype(str).str.zfill(4)
+          hour = pd.to_numeric(text.str[-4:-2], errors="coerce")
+          minute = pd.to_numeric(text.str[-2:], errors="coerce")
+          valid_time = t.notna() & t.between(0, 2359) & hour.between(0, 23) & minute.between(0, 59)
+          analysis = data.loc[valid_time & data["AREA NAME"].notna()].copy()
+          analysis["HOUR OCC"] = t.loc[analysis.index].astype("int64") // 100
+          peak_hour = int(analysis["HOUR OCC"].value_counts().idxmax())
+          night_hours = [22, 23, 0, 1, 2, 3]
+          night_counts = analysis.loc[analysis["HOUR OCC"].isin(night_hours)].groupby("AREA NAME").size().sort_values(ascending=False)
+          peak_area = str(night_counts.index[0]) if len(night_counts) else "Not available"
+          peak_area_count = int(night_counts.iloc[0]) if len(night_counts) else 0
+          ages = pd.to_numeric(analysis["Vict Age"], errors="coerce")
+          age_valid = ages.between(0, 110)
+          age_labels = ["0-17", "18-25", "26-34", "35-44", "45-54", "55-64", "65+"]
+          age_bins = [0, 18, 26, 35, 45, 55, 65, float("inf")]
+          age_groups = pd.cut(ages.loc[age_valid], bins=age_bins, labels=age_labels, right=False)
+          age_counts = age_groups.value_counts().reindex(age_labels, fill_value=0)
+          top_areas = night_counts.head(5)
+
+          styles = getSampleStyleSheet()
+          styles.add(ParagraphStyle(name="ReportTitle", parent=styles["Title"], alignment=TA_CENTER, fontSize=20, leading=24, spaceAfter=8))
+          styles.add(ParagraphStyle(name="Sub", parent=styles["Normal"], alignment=TA_CENTER, textColor=colors.HexColor("#555555"), spaceAfter=14))
+          story = [
+              Paragraph("Los Angeles Crime Analysis", styles["ReportTitle"]),
+              Paragraph("Reproducible analysis of the repository's supplied LAPD crime records", styles["Sub"]),
+              Paragraph("Executive summary", styles["Heading1"]),
+              Paragraph(f"The dataset contains {len(data):,} rows. {len(analysis):,} records have a valid occurrence time and area and are used for hourly and night-time counts. The most frequent recorded hour is {peak_hour:02d}:00. Under the defined night window (10:00 PM–3:59 AM), {peak_area} has the highest report count ({peak_area_count:,}).", styles["BodyText"]),
+              Spacer(1, 8),
+              Paragraph("Top areas during the defined night window", styles["Heading2"]),
+          ]
+          rows = [["LAPD area", "Recorded reports"]] + [[str(k), f"{int(v):,}"] for k, v in top_areas.items()]
+          table = Table(rows, colWidths=[85*mm, 45*mm])
+          table.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#23395B")),("TEXTCOLOR",(0,0),(-1,0),colors.white),("GRID",(0,0),(-1,-1),0.4,colors.grey),("PADDING",(0,0),(-1,-1),6)]))
+          story += [table, Spacer(1, 8), Paragraph("Victim age groups", styles["Heading2"])]
+          age_rows = [["Age group", "Recorded reports"]] + [[str(k), f"{int(v):,}"] for k,v in age_counts.items()]
+          age_table = Table(age_rows, colWidths=[85*mm,45*mm])
+          age_table.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#23395B")),("TEXTCOLOR",(0,0),(-1,0),colors.white),("GRID",(0,0),(-1,-1),0.4,colors.grey),("PADDING",(0,0),(-1,-1),6)]))
+          story += [age_table, PageBreak(), Paragraph("Visual findings", styles["Heading1"])]
+          for path, caption in [
+              ("images/01_crimes_by_hour.png", "Figure 1. Recorded crime reports by hour of occurrence."),
+              ("images/02_night_crimes_by_area.png", "Figure 2. Five areas with the highest report counts from 10:00 PM to 3:59 AM."),
+              ("images/03_crimes_by_victim_age_group.png", "Figure 3. Recorded reports by victim age group; valid numeric ages only."),
+          ]:
+              story += [Image(path, width=165*mm, height=80*mm, kind="proportional"), Paragraph(caption, styles["Caption"]), Spacer(1, 7)]
+          story += [
+              PageBreak(),
+              Paragraph("Methodology and limitations", styles["Heading1"]),
+              Paragraph("Occurrence time is validated as HHMM before hour extraction. Records with missing victim sex or descent are retained for overall time and area analysis. Age-group analysis is restricted to numeric ages from 0 to 109. Night-time is defined consistently as 10:00 PM through 3:59 AM.", styles["BodyText"]),
+              Spacer(1, 8),
+              Paragraph("These are counts of recorded reports, not population-adjusted crime rates or a measure of an individual's risk. Reporting behaviour, population size, exposure, policing practices, and data quality can affect the observed counts. The dataset is a historical/modified extract; it should not be described as a live feed. Findings are descriptive and do not establish causation.", styles["BodyText"]),
+          ]
+          SimpleDocTemplate("LAPD_Crime_Analysis_Report (1).pdf", pagesize=A4, rightMargin=18*mm, leftMargin=18*mm, topMargin=16*mm, bottomMargin=16*mm).build(story)
+          print("PDF report generated.")
+          PY
+      - name: Commit executed notebook, charts, and PDF
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Los_Angeles_Crimes_Analysis_RECOVERED.ipynb images "LAPD_Crime_Analysis_Report (1).pdf"
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish executed crime analysis and refreshed report"
+            git push
+          else
+            echo "No generated changes to commit."
+          fi
