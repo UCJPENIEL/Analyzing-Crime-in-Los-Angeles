@@ -1,216 +1,98 @@
-# 🚓 Analyzing Crime in Los Angeles
+# Analyzing Crime in Los Angeles
 
-[![Python](https://img.shields.io/badge/Python-3.9-blue)](https://www.python.org/)
-[![Pandas](https://img.shields.io/badge/Pandas-Data%20Analysis-yellowgreen)](https://pandas.pydata.org/)
-[![Matplotlib](https://img.shields.io/badge/Matplotlib-Visualization-orange)](https://matplotlib.org/)
-[![Seaborn](https://img.shields.io/badge/Seaborn-Charts-blueviolet)](https://seaborn.pydata.org/)
+[![Python](https://img.shields.io/badge/Python-3.11-blue)](https://www.python.org/)
+[![Pandas](https://img.shields.io/badge/Pandas-Analysis-150458)](https://pandas.pydata.org/)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange)](https://jupyter.org/)
-[![ReportLab](https://img.shields.io/badge/ReportLab-PDF%20Reports-lightgrey)](https://www.reportlab.com/)
+[![Workflow](https://github.com/UCJPENIEL/Analyzing-Crime-in-Los-Angeles/actions/workflows/execute-analysis.yml/badge.svg)](https://github.com/UCJPENIEL/Analyzing-Crime-in-Los-Angeles/actions/workflows/execute-analysis.yml)
 
-## 📊 Overview
+## Project overview
 
-Los Angeles is a large, highly active city where understanding when, where, and against whom crimes occur can support better operational decisions.
+This project explores recorded crime reports in Los Angeles using Python and Pandas. It examines when reports occurred, which LAPD geographic areas had the largest number of reports during a defined night-time window, and how recorded reports are distributed across victim age groups.
 
-This project analyzes a modified **Los Angeles Police Department (LAPD) crime dataset** to identify patterns in crime occurrence and turn them into practical, data-driven insights for resource allocation and public-safety planning.
+The goal is to demonstrate a reproducible data-analysis workflow: inspect the data, validate important fields, define analysis populations explicitly, visualize patterns, and communicate findings with appropriate limitations.
 
-### Key Questions
+## Questions explored
 
-- ⏰ Which hour of the day records the highest frequency of crimes?
-- 🌃 Which LAPD area records the highest frequency of crimes during the defined nighttime period?
-- 👥 Which victim age groups experience the highest number of recorded crimes?
+1. Which hour of the day has the highest number of recorded crime reports?
+2. Which LAPD area has the highest number of reports between **10:00 PM and 3:59 AM**?
+3. How are recorded reports distributed across the victim age groups 0–17, 18–25, 26–34, 35–44, 45–54, 55–64, and 65+?
 
----
+## Dataset and provenance
 
-## 📂 Dataset
+- Repository data file: [`crimes.csv`](./crimes.csv)
+- Dataset reference supplied for this project: [Kaggle — Crimes in Los Angeles](https://www.kaggle.com/datasets/sudhanvahg/crimes-in-las-angeles)
+- Original public-data context: [Los Angeles Open Data — Crime Data from 2020 to Present](https://data.lacity.org/d/2nrs-mtv8)
+- Analysis notebook: [`Los_Angeles_Crimes_Analysis_RECOVERED.ipynb`](./Los_Angeles_Crimes_Analysis_RECOVERED.ipynb)
+- Generated report: [`LAPD_Crime_Analysis_Report (1).pdf`](./LAPD_Crime_Analysis_Report%20(1).pdf)
 
-- **Source:** Modified version of [Los Angeles Open Data – Crime Data](https://www.datacamp.com/datalab/w/fb1992cd-cf01-4cea-a0ad-cd477d93f0c3/edit)
-- **File:** [`crimes.csv`](./crimes.csv)
-- **Original size:** approximately **185,715 rows × 12 columns**
-- **Analysis notebook:** [`Los_Angeles_Crimes_Analysis_RECOVERED.ipynb`](./Los_Angeles_Crimes_Analysis_RECOVERED.ipynb)
-- **PDF report:** [`LAPD_Crime_Analysis_Report (1).pdf`](./LAPD_Crime_Analysis_Report%20(1).pdf)
+**Provenance note:** the notebook and existing CSV originated from a modified educational analysis dataset. The Kaggle link is recorded as a dataset reference, but the repository does not yet establish a file-level checksum or documented transformation proving that its CSV is byte-for-byte the Kaggle download. The Kaggle reference should therefore not be presented as definitive provenance for every row in the repository file. The Los Angeles Open Data portal provides the upstream public-data context.
 
-### Key Columns
+The legacy LAPD Crime Data from 2020 to Present dataset is historical: LAPD transitioned to NIBRS-based reporting in March 2024 and the legacy dataset is no longer updated. Do not interpret this repository's extract as live or current crime monitoring.
 
-| Column | Description |
-|---|---|
-| `DR_NO` | LAPD Division of Records Number |
-| `DATE OCC` | Date the crime occurred |
-| `TIME OCC` | Time of occurrence in 24-hour military format |
-| `AREA NAME` | LAPD geographic patrol area |
-| `Crm Cd Desc` | Description of the crime |
-| `Vict Age` | Victim age |
-| `Vict Sex` | Victim sex |
-| `Vict Descent` | Victim descent code |
-| `Weapon Desc` | Weapon description, where applicable |
-| `Status Desc` | Crime status |
-| `LOCATION` | Street location of the crime |
+## Analysis workflow
 
----
+1. **Load and inspect** — read the CSV using a repository-relative path; review shape, data types, and missingness.
+2. **Validate occurrence time** — convert `TIME OCC` safely and retain valid HHMM values only for time-based analysis.
+3. **Preserve analytical population** — do not discard records with missing victim sex/descent when answering overall hourly or area questions.
+4. **Analyze hourly patterns** — derive the occurrence hour and compare report counts across all 24 hours.
+5. **Analyze night-time reports** — use the explicitly defined window 22:00–03:59 and rank LAPD areas by report count.
+6. **Analyze victim age groups** — use numeric ages from 0 to 109 and left-inclusive bins so the named groups are represented correctly.
+7. **Validate and visualize** — assert key assumptions and export figures for the report.
 
-## 🛠️ Tools & Libraries
+## Visualizations
 
-- **Python** — data cleaning, transformation, and analysis
-- **Pandas** — tabular data manipulation and aggregation
-- **NumPy** — numerical operations and age-bin boundaries
-- **Matplotlib** — chart creation
-- **Seaborn** — exploratory visualizations
-- **Jupyter Notebook** — interactive analysis workflow
-- **ReportLab** — PDF report generation
+The executed notebook exports the following charts to `images/`:
 
----
+- `01_crimes_by_hour.png` — report counts by hour.
+- `02_night_crimes_by_area.png` — top five areas in the defined night window.
+- `03_crimes_by_victim_age_group.png` — report counts by victim age group.
 
-## 📈 Methodology
+## Reproduce the analysis
 
-### 1. Data Preparation
-
-The dataset was inspected for structure and missing values before analysis. Rows with missing values in selected low-missingness demographic fields were removed, while fields with substantial missingness, such as weapon descriptions, were retained rather than being discarded automatically.
-
-The analysis also created derived variables, including:
-
-- `HOUR OCC` from `TIME OCC`
-- victim age brackets using `pd.cut()`
-
-### 2. Crime Frequency by Hour
-
-The first two digits of `TIME OCC` were extracted and converted into an integer hour.
-
-The hour with the largest number of recorded crimes was identified using frequency counts.
-
-**Finding:** the highest crime frequency occurs at **12:00 PM (noon)**.
-
-### 3. Night Crime Analysis
-
-For the project question, nighttime is defined as **10:00 PM through 3:59 AM**.
-
-Because each extracted integer represents a complete hour, the relevant hours are:
-
-```python
-night_hours = list(range(22, 24)) + list(range(0, 4))
-# [22, 23, 0, 1, 2, 3]
-```
-
-These represent:
-
-- `22` → 10:00 PM–10:59 PM
-- `23` → 11:00 PM–11:59 PM
-- `0` → 12:00 AM–12:59 AM
-- `1` → 1:00 AM–1:59 AM
-- `2` → 2:00 AM–2:59 AM
-- `3` → 3:00 AM–3:59 AM
-
-Crimes occurring in these hours are filtered and grouped by `AREA NAME`.
-
-**Peak night-crime location:** **Central**.
-
-> Note: an earlier version of the notebook used a wider nighttime window. The project definition above reflects the actual question and should be used when reproducing the final result.
-
-### 4. Victim Age-Group Analysis
-
-Victim ages are grouped into the following ranges:
-
-- `0-17`
-- `18-25`
-- `26-34`
-- `35-44`
-- `45-54`
-- `55-64`
-- `65+`
-
-The age groups are created with `pd.cut()`, using bin boundaries that preserve the required inclusive upper limits.
-
-**Finding:** the **26–34** age group has the highest recorded frequency among the defined victim age groups.
-
-### 5. Reporting and Visualization
-
-The findings are supported with bar charts showing:
-
-- crime frequency by hour
-- areas with the highest night-crime frequency
-- crime frequency by victim age group
-
-A PDF report is also included in the repository for a concise presentation of the analysis.
-
----
-
-## 🔍 Key Insights
-
-- **Crime frequency peaks at noon (12 PM).**
-- **Central** records the highest frequency of crimes during the project's defined nighttime window.
-- The **26–34** victim age group has the highest recorded crime frequency among the age brackets analyzed.
-- Time, location, and victim-demographic patterns can help guide more targeted resource allocation and prevention strategies.
-
-> These findings describe patterns in the supplied dataset and should not, on their own, be interpreted as causal relationships or individual-level risk predictions.
-
----
-
-## 📊 Sample Visualizations
-
-| Crimes by Hour | Top Areas with Night Crimes | Victim Age Groups |
-|---|---|---|
-| <img width="1023" height="545" alt="Crime frequency by hour" src="https://github.com/user-attachments/assets/94e1bb92-034e-4bd9-974e-4fdf3e74404e" /> | <img width="704" height="520" alt="Top areas with night crimes" src="https://github.com/user-attachments/assets/c4855c75-d355-473e-a01a-abddda45988e" /> | <img width="713" height="493" alt="Victim age groups" src="https://github.com/user-attachments/assets/7efd1071-3c6e-42f5-864b-ce05dc6b3a7f" /> |
-
----
-
-## 🚀 How to Run the Project
-
-### 1. Clone the repository
+Requires Python 3.11 or later.
 
 ```bash
 git clone https://github.com/UCJPENIEL/Analyzing-Crime-in-Los-Angeles.git
 cd Analyzing-Crime-in-Los-Angeles
+python -m venv .venv
 ```
 
-### 2. Install the main dependencies
+Activate the environment, then install dependencies:
 
 ```bash
-pip install pandas numpy matplotlib seaborn jupyter reportlab
-```
+# Windows PowerShell
+.venv\\Scripts\\Activate.ps1
 
-### 3. Launch Jupyter Notebook
+# macOS / Linux
+source .venv/bin/activate
 
-```bash
+pip install -r requirements.txt
 jupyter notebook
 ```
 
-Open:
+Open `Los_Angeles_Crimes_Analysis_RECOVERED.ipynb` and run all cells from top to bottom.
 
-```text
-Los_Angeles_Crimes_Analysis_RECOVERED.ipynb
-```
+The notebook expects `crimes.csv` in the repository root. The dataset is included in this repository, so no separate download is required for the current version.
 
-Then run the notebook cells in order to reproduce the analysis.
+## Automated quality checks
 
----
+GitHub Actions runs when the notebook, dataset, dependencies, or workflow changes. It installs the declared dependencies, executes every notebook cell from a clean state, verifies the saved outputs and three chart exports, regenerates the PDF report, and commits generated artifacts when they change.
 
-## 📁 Repository Contents
+You can also start a run manually from the repository's **Actions** tab.
 
-```text
-Analyzing-Crime-in-Los-Angeles/
-├── crimes.csv
-├── Los_Angeles_Crimes_Analysis_RECOVERED.ipynb
-├── LAPD_Crime_Analysis_Report (1).pdf
-├── la_skyline.jpg
-└── README.md
-```
+## Interpretation and limitations
 
----
+- These are counts of recorded reports, not population-adjusted crime rates.
+- More reports in an area do not automatically imply a higher individual risk; population, exposure, reporting behaviour, and patrol practices matter.
+- The victim-age analysis excludes missing, non-numeric, negative, and 110+ ages. Overall time and area analyses do not require victim demographics.
+- Historical datasets may contain transcription errors, missing values, reporting delays, and changing definitions.
+- Descriptive associations do not establish causation and should not be used to profile individuals or communities.
 
-## 🎯 Project Skills Demonstrated
+## Tools
 
-This project demonstrates practical experience with:
+Python, Pandas, NumPy, Matplotlib, Seaborn, Jupyter Notebook, ReportLab, and GitHub Actions.
 
-- exploratory data analysis
-- data cleaning and validation
-- feature extraction from time data
-- categorical binning with `pd.cut()`
-- grouping and aggregation with Pandas
-- analytical visualization
-- interpreting business/public-safety questions with data
-- documenting analysis for reproducibility
-
----
-
-## 📌 Author
+## Author
 
 **Ugochukwu Joshua Toluwaleke**
 
